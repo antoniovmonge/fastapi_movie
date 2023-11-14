@@ -10,14 +10,19 @@ class MovieSchema(BaseModel):
     rating: Optional[float] = Field(ge=0.0, le=10.0)
     category: str = Field(min_length=2, max_length=50)
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "id": "1",
-                "title": "New Film",
-                "description": "Description",
-                "year": 2021,
-                "rating": 5.0,
-                "category": "Unclassified",
+                "id": "x",
+                "title": "The Matrix",
+                "description": "A computer hacker learns from mysterious rebels about the true nature of his reality.",
+                "year": 1999,
+                "rating": 8.7,
+                "category": "Sci-Fi",
             }
         }
+    }
+
+    # TODO: Add a method to convert the model to a dictionary
+    def to_dict(self):
+        return self.model_dump()

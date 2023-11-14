@@ -58,7 +58,7 @@ def get_movies() -> list[MovieSchema]:
 
 
 # Path Param
-@app.get("/movies/{id}/", tags=["Movies"], response_model=MovieSchema)
+@app.get("/movies/{id}/", tags=["Movies"], response_model=MovieSchema, status_code=200)
 def get_movie_by_id(id: str) -> MovieSchema:
     """
     This endpoint takes a path parameter id to filter the movies.
@@ -66,11 +66,11 @@ def get_movie_by_id(id: str) -> MovieSchema:
     movie = [item for item in movies if item["id"] == id]
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
-    return JSONResponse(content=movie[0])
+    return JSONResponse(status_code=200, content=movie[0])
 
 
 # Query Param
-@app.get("/movies/", tags=["Movies"], response_model=list[MovieSchema])
+@app.get("/movies/", tags=["Movies"], response_model=list[MovieSchema], status_code=200)
 def get_movies_by_category(
     category: str = Query(min_length=2, max_length=50)
 ) -> list[MovieSchema]:
@@ -84,16 +84,18 @@ def get_movies_by_category(
         raise HTTPException(
             status_code=404, detail=f"Movies of the category: '{category}' not found"
         )
-    return JSONResponse(content=data)
+    return JSONResponse(status_code=200, content=data)
 
 
-@app.post("/movies", tags=["Movies"], response_model=dict)
+@app.post("/movies", tags=["Movies"], response_model=dict, status_code=201)
 def create_movie(movie: MovieSchema) -> dict:
     movies.append(movie.to_dict())
-    return JSONResponse(content={"message": "Movie created successfully"})
+    return JSONResponse(
+        status_code=201, content={"message": "Movie created successfully"}
+    )
 
 
-@app.put("/movies/{id}", tags=["Movies"], response_model=dict)
+@app.put("/movies/{id}", tags=["Movies"], response_model=dict, status_code=200)
 def update_movie(id: str, movie: MovieSchema) -> dict:
     for item in movies:
         if item["id"] == id:
@@ -103,15 +105,18 @@ def update_movie(id: str, movie: MovieSchema) -> dict:
             item["rating"] = movie.rating
             item["category"] = movie.category
 
-    return JSONResponse(content={"message": "Movie updated successfully"})
+    return JSONResponse(
+        status_code=201, content={"message": "Movie updated successfully"}
+    )
 
 
-@app.delete("/movies/{id}", tags=["Movies"], response_model=dict)
+@app.delete("/movies/{id}", tags=["Movies"], response_model=dict, status_code=200)
 def delete_movie(id: str) -> dict:
     for movie in movies:
         if movie["id"] == id:
             movies.remove(movie)
 
     return JSONResponse(
-        content={"message": f"Movie with Id: '{id}' successfully removed"}
+        status_code=200,
+        content={"message": f"Movie with Id: '{id}' successfully removed"},
     )

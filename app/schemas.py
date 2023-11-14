@@ -1,5 +1,23 @@
+from fastapi import Request, HTTPException
+from fastapi.security import HTTPBearer
+
 from pydantic import BaseModel, Field
 from typing import Optional
+
+from utils.jwt_manager import validate_token
+
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth = await super().__call__(request)
+        data = validate_token(auth.credentials)
+        if data["email"] != "user@email.com":
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+class UserSchema(BaseModel):
+    email: str = Field(min_length=5, max_length=50)
+    password: str = Field(min_length=4, max_length=50)
 
 
 class MovieSchema(BaseModel):
@@ -23,6 +41,5 @@ class MovieSchema(BaseModel):
         }
     }
 
-    # TODO: Add a method to convert the model to a dictionary
     def to_dict(self):
         return self.model_dump()

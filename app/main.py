@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 
-# from typing import Optional, List
-
-from app.schemas import MovieSchema
+from app.schemas import MovieSchema, UserSchema, JWTBearer
+from utils.jwt_manager import create_token
 
 app = FastAPI()
 app.title = "Movies API"
@@ -49,12 +48,18 @@ def home() -> HTMLResponse:
     return HTMLResponse("<h1>Movies Home</h1>")
 
 
-@app.get("/movies", tags=["Movies"], response_model=list[MovieSchema])
+@app.get(
+    "/movies",
+    tags=["Movies"],
+    response_model=list[MovieSchema],
+    status_code=200,
+    dependencies=[Depends(JWTBearer())],
+)
 def get_movies() -> list[MovieSchema]:
     """
     Return a list of dictionaries with information about movies
     """
-    return JSONResponse(content=movies)
+    return JSONResponse(status_code=200, content=movies)
 
 
 # Path Param
@@ -89,7 +94,7 @@ def get_movies_by_category(
 
 @app.post("/movies", tags=["Movies"], response_model=dict, status_code=201)
 def create_movie(movie: MovieSchema) -> dict:
-    movies.append(movie.to_dict())
+    movies.append(movie.model_dump())
     return JSONResponse(
         status_code=201, content={"message": "Movie created successfully"}
     )
@@ -120,3 +125,10 @@ def delete_movie(id: str) -> dict:
         status_code=200,
         content={"message": f"Movie with Id: '{id}' successfully removed"},
     )
+
+
+@app.post("/login", tags=["Auth"], status_code=200)
+def login(user: UserSchema):
+    if user.email == "user@email.com" and user.password == "pass_1234":
+        token = create_token(user.model_dump())
+        return JSONResponse(status_code=200, content={"token": token})

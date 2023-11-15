@@ -1,12 +1,23 @@
-from fastapi import FastAPI, HTTPException, Query, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
-from app.schemas import MovieSchema, UserSchema, JWTBearer
-from utils.jwt_manager import create_token
+
+
+from config.database import engine, Base
+from routers import movies_router, users_router
+
+
+from middlewares.error_handler import ErrorHandler
 
 app = FastAPI()
 app.title = "Movies API"
 app.version = "0.0.1"
+
+app.add_middleware(ErrorHandler)
+app.include_router(users_router)
+app.include_router(movies_router)
+
+Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health-check/", tags=["Health Check"])
@@ -15,26 +26,6 @@ def health_check():
     Return just a message to check the app is working.
     """
     return {"message": "OK"}
-
-
-movies = [
-    {
-        "id": "1",
-        "title": "Avatar",
-        "description": "En un exuberante planeta llamado Pandora viven los Navi, seres que ...",
-        "year": 2009,
-        "rating": 7.8,
-        "category": "Action",
-    },
-    {
-        "id": "2",
-        "title": "Avatar",
-        "description": "En un exuberante planeta llamado Pandora viven los Navi, seres que ...",
-        "year": 2009,
-        "rating": 7.8,
-        "category": "Action",
-    },
-]
 
 
 @app.get(
@@ -46,89 +37,3 @@ def home() -> HTMLResponse:
     Return a HTMLResponse for home
     """
     return HTMLResponse("<h1>Movies Home</h1>")
-
-
-@app.get(
-    "/movies",
-    tags=["Movies"],
-    response_model=list[MovieSchema],
-    status_code=200,
-    dependencies=[Depends(JWTBearer())],
-)
-def get_movies() -> list[MovieSchema]:
-    """
-    Return a list of dictionaries with information about movies
-    """
-    return JSONResponse(status_code=200, content=movies)
-
-
-# Path Param
-@app.get("/movies/{id}/", tags=["Movies"], response_model=MovieSchema, status_code=200)
-def get_movie_by_id(id: str) -> MovieSchema:
-    """
-    This endpoint takes a path parameter id to filter the movies.
-    """
-    movie = [item for item in movies if item["id"] == id]
-    if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    return JSONResponse(status_code=200, content=movie[0])
-
-
-# Query Param
-@app.get("/movies/", tags=["Movies"], response_model=list[MovieSchema], status_code=200)
-def get_movies_by_category(
-    category: str = Query(min_length=2, max_length=50)
-) -> list[MovieSchema]:
-    """
-    This endpoint takes the category as query param
-    and returns the filtered list of movies.
-    """
-    category = category.title()
-    data = [movie for movie in movies if movie["category"] == category]
-    if not data:
-        raise HTTPException(
-            status_code=404, detail=f"Movies of the category: '{category}' not found"
-        )
-    return JSONResponse(status_code=200, content=data)
-
-
-@app.post("/movies", tags=["Movies"], response_model=dict, status_code=201)
-def create_movie(movie: MovieSchema) -> dict:
-    movies.append(movie.model_dump())
-    return JSONResponse(
-        status_code=201, content={"message": "Movie created successfully"}
-    )
-
-
-@app.put("/movies/{id}", tags=["Movies"], response_model=dict, status_code=200)
-def update_movie(id: str, movie: MovieSchema) -> dict:
-    for item in movies:
-        if item["id"] == id:
-            item["title"] = movie.title
-            item["description"] = movie.description
-            item["year"] = movie.year
-            item["rating"] = movie.rating
-            item["category"] = movie.category
-
-    return JSONResponse(
-        status_code=201, content={"message": "Movie updated successfully"}
-    )
-
-
-@app.delete("/movies/{id}", tags=["Movies"], response_model=dict, status_code=200)
-def delete_movie(id: str) -> dict:
-    for movie in movies:
-        if movie["id"] == id:
-            movies.remove(movie)
-
-    return JSONResponse(
-        status_code=200,
-        content={"message": f"Movie with Id: '{id}' successfully removed"},
-    )
-
-
-@app.post("/login", tags=["Auth"], status_code=200)
-def login(user: UserSchema):
-    if user.email == "user@email.com" and user.password == "pass_1234":
-        token = create_token(user.model_dump())
-        return JSONResponse(status_code=200, content={"token": token})

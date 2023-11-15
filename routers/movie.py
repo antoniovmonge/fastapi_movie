@@ -5,6 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from app.schemas import MovieSchema
 from config.database import Session
 from models.movie import Movie
+from services.movie import MovieService
 
 from middlewares.jwt_bearer import JWTBearer
 
@@ -22,7 +23,7 @@ def get_movies() -> list[MovieSchema]:
     Return a list of dictionaries with information about movies
     """
     db = Session()
-    result = db.query(Movie).all()
+    result = MovieService(db).get_movies()
     return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
@@ -35,7 +36,7 @@ def get_movie_by_id(id: int = Path(ge=1, le=2000)) -> MovieSchema:
     This endpoint takes a path parameter id to filter the movies.
     """
     db = Session()
-    result = db.query(Movie).filter(Movie.id == id).first()
+    result = MovieService(db).get_movie_by_id(id)
     if not result:
         raise HTTPException(status_code=404, detail="Movie not found")
     return JSONResponse(status_code=200, content=jsonable_encoder(result))
@@ -54,7 +55,7 @@ def get_movies_by_category(
     """
     category = category.title()
     db = Session()
-    result = db.query(Movie).filter(Movie.category == category).all()
+    result = MovieService(db).get_movies_by_category(category)
     if not result:
         raise HTTPException(
             status_code=404, detail=f"Movies of the category: '{category}' not found"

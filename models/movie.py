@@ -11,7 +11,6 @@ from sqlalchemy import (
 
 
 class Movie(Base):
-
     __tablename__ = "movies"
 
     id = Column(Integer, primary_key=True)
@@ -20,3 +19,6 @@ class Movie(Base):
     year = Column(Integer)
     rating = Column(Float)
     category = Column(String)
+
+    def __repr__(self) -> str:
+        return f"<Movie(id={self.id}, title={self.title})>"

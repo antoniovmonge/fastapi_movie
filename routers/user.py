@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 
-from app.schemas import UserSchema
+from schemas import UserSchema
 from utils.jwt_manager import create_token
 
 users_router = APIRouter(prefix="/users", tags=["Users"])
